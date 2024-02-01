@@ -12,11 +12,11 @@ resource "aws_launch_configuration" "terraform-example" {
 		create_before_destroy = true
 	}
 	
-	user_data = <<-EOF
-		#!/bin/bash
-		echo "Hello, Terraform" > index.html
-		nohup busybox httpd -f -p ${var.server_port} &
-		EOF
+	user_data = templatefile("user-data.sh", {
+		server_port = var.server_port
+		db_address = data.terraform_remote_state.db.outputs.address
+		db_port = data.terraform_remote_state.db.outputs.port
+	})
 }
 
 resource "aws_security_group" "terraform-sg-exmaple" {
@@ -31,28 +31,6 @@ resource "aws_security_group" "terraform-sg-exmaple" {
 	}
 
 }
-
-variable "server_port" {
-	description = "port for the server to get HTTP requests"
-	type = number
-	default = 8080
-}
-
-data "aws_vpc" "default" {
-	default = true
-}
-
-data "aws_subnets" "default" {
-	filter {
-		name = "vpc-id"
-		values = [data.aws_vpc.default.id]
-	}
-}
-
-# output "public_ip" {
-#	value = aws_instance.terraform-example.public_ip
-#	description = "public IP address of the web server"
-# }
 
 resource "aws_autoscaling_group" "terraform-asg-example" {
 	launch_configuration = aws_launch_configuration.terraform-example.name
@@ -140,9 +118,4 @@ resource "aws_lb_listener_rule" "asg" {
 		target_group_arn = aws_lb_target_group.asg.arn
 	}
 
-}
-
-output "alb_dns_name" {
-	value = aws_lb.example.dns_name
-	description = "Domain name of the LB"
 }
