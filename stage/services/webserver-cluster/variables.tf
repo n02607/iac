@@ -22,4 +22,5 @@ data "terraform_remote_state" "db" {
 		key = "stage/data-stores/mysql/terraform.tfstate"
 		region = "ap-northeast-2"
 	}
-                                                                                                       }    
+}
+
